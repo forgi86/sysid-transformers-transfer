@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from dataset import WHDataset, LinearDynamicalDataset
+from dataset import WHDataset, LinearDynamicalDataset, NonInfiniteWHDataset
 from torch.utils.data import DataLoader
 from transformer_sim import Config, TSTransformer
 from transformer_onestep import warmup_cosine_lr
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     # Init wandb
     if cfg.log_wandb:
         wandb.init(
-            project="sysid-meta",
+            project="sysid-transfer",
             #name="run1",
             # track hyperparameters and run metadata
             config=vars(cfg)
@@ -129,13 +129,13 @@ if __name__ == '__main__':
 
     # Create data loader
     #train_ds = LinearDynamicalDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new)
-    train_ds = WHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
+    train_ds = NonInfiniteWHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
                          mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                          system_seed=cfg.seed, data_seed=cfg.seed+1, fixed_system=cfg.fixed_system)
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = WHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
+    val_ds = NonInfiniteWHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
                        mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                        system_seed=cfg.seed if cfg.fixed_system else cfg.seed+2,
                        data_seed=cfg.seed+3, fixed_system=cfg.fixed_system)
