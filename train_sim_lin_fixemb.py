@@ -132,7 +132,7 @@ if __name__ == '__main__':
     #train_ds = WHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
     #                     mag_range=cfg.mag_range, phase_range=cfg.phase_range,
     #                     system_seed=cfg.seed, data_seed=cfg.seed+1, fixed_system=cfg.fixed_system)
-    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=0)
+    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=10)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
     #val_ds = WHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     #                   system_seed=cfg.seed if cfg.fixed_system else cfg.seed+2,
     #                   data_seed=cfg.seed+3, fixed_system=cfg.fixed_system)
     val_ds = LinearDynamicalDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new)
-    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=0)
+    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=10)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=1, n_u=1,
                       seq_len_ctx=cfg.seq_len_ctx, seq_len_new=cfg.seq_len_new,
