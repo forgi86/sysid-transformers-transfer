@@ -105,7 +105,7 @@ if __name__ == '__main__':
     # Init wandb
     if cfg.log_wandb:
         wandb.init(
-            project="sysid-meta",
+            project="sysid-transformers-transfer",
             #name="run1",
             # track hyperparameters and run metadata
             config=vars(cfg)
