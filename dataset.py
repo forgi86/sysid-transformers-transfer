@@ -223,6 +223,7 @@ class PWHDataset(IterableDataset):
             yield torch.tensor(y), torch.tensor(u)
 
 
+
 def seed_worker(worker_id):
     worker_info = torch.utils.data.get_worker_info()
     dataset = worker_info.dataset
@@ -232,6 +233,119 @@ def seed_worker(worker_id):
     #print(worker_id, worker_info.id)
 
 
+class NonInfiniteWHDataset(IterableDataset):
+    def __init__(self, seq_num=100, nx=5, nu=1, ny=1, seq_len=600, random_order=True,
+                 strictly_proper=True, normalize=True, dtype="float32",
+                 fixed_system=False, system_seed=None, data_seed=None, **mdlargs):
+        super(WHDataset).__init__()
+        self.seq_num = seq_num
+        self.nx = nx
+        self.nu = nu
+        self.ny = ny
+        self.seq_len = seq_len
+        self.strictly_proper = strictly_proper
+        self.dtype = dtype
+        self.normalize = normalize
+        self.strictly_proper = strictly_proper
+        self.random_order = random_order  # random number of states from 1 to nx
+        self.system_rng = np.random.default_rng(system_seed)  # source of randomness for model generation
+        self.data_rng = np.random.default_rng(data_seed)  # source of randomness for model generation
+        self.fixed_system = fixed_system  # same model at each iteration (classical identification)
+        self.mdlargs = mdlargs
+
+    def __iter__(self):
+
+        # A simple ff neural network
+        def nn_fun(x):
+            out = x @ w1.transpose() + b1
+            out = np.tanh(out)
+            out = out @ w2.transpose() + b2
+            return out
+
+        n_in = 1
+        n_out = 1
+        n_hidden = 32
+        n_skip = 200
+
+        if self.fixed_system:  # same model for all data sequences!
+            w1 = self.system_rng.normal(size=(n_hidden, n_in)) / np.sqrt(n_in) * 5 / 3
+            b1 = self.system_rng.normal(size=(1, n_hidden)) * 1.0
+            w2 = self.system_rng.normal(size=(n_out, n_hidden)) / np.sqrt(n_hidden)
+            b2 = self.system_rng.normal(size=(1, n_out)) * 1.0
+
+            G1 = drss_matrices(states=self.system_rng.integers(1, self.nx+1) if self.random_order else self.nx,
+                               inputs=1,
+                               outputs=1,
+                               strictly_proper=self.strictly_proper,
+                               rng=self.system_rng,
+                               **self.mdlargs)
+
+            G2 = drss_matrices(states=self.system_rng.integers(1, self.nx+1) if self.random_order else self.nx,
+                               inputs=1,
+                               outputs=1,
+                               strictly_proper=False,
+                               rng=self.system_rng,
+                               **self.mdlargs)
+
+        tensor_list_u = []
+        tensor_list_y = []
+        for i in range(self.seq_num):   # generate a fixed amount of sequences
+
+            if not self.fixed_system:  # different model for different instances!
+                w1 = self.system_rng.normal(size=(n_hidden, n_in)) / np.sqrt(n_in) * 5 / 3
+                b1 = self.system_rng.normal(size=(1, n_hidden)) * 1.0
+                w2 = self.system_rng.normal(size=(n_out, n_hidden)) / np.sqrt(n_hidden)
+                b2 = self.system_rng.normal(size=(1, n_out)) * 1.0
+
+                G1 = drss_matrices(states=self.system_rng.integers(1, self.nx+1) if self.random_order else self.nx,
+                                   inputs=1,
+                                   outputs=1,
+                                   strictly_proper=self.strictly_proper,
+                                   rng=self.system_rng,
+                                   **self.mdlargs)
+
+                G2 = drss_matrices(states=self.system_rng.integers(1, self.nx+1) if self.random_order else self.nx,
+                                   inputs=1,
+                                   outputs=1,
+                                   strictly_proper=False,
+                                   rng=self.system_rng,
+                                   **self.mdlargs)
+
+            # u = np.random.randn(self.seq_len + n_skip, 1)  # input to be improved (filtered noise, multisine, etc)
+            u = self.data_rng.normal(size=(self.seq_len + n_skip, 1))
+
+            # G1
+            y1 = dlsim(*G1, u)
+            y1 = (y1 - y1[n_skip:].mean(axis=0)) / (y1[n_skip:].std(axis=0) + 1e-6)
+
+            # F
+            y2 = nn_fun(y1)
+
+            # G2
+            y3 = dlsim(*G2, y2)
+
+            u = u[n_skip:]
+            y = y3[n_skip:]
+
+            if self.normalize:
+                y = (y - y.mean(axis=0)) / (y.std(axis=0) + 1e-6)
+
+            u = u.astype(self.dtype)
+            y = y.astype(self.dtype)
+
+            tensor_list_y.append(torch.tensor(y))
+            tensor_list_u.append(torch.tensor(u))
+
+        sequences_y = torch.stack(tensor_list_y)
+        sequences_u = torch.stack(tensor_list_u)
+
+        i = -1
+        while True:  # infinite repetition of the fixed sequences
+            i += 1
+            i = i % self.seq_num
+            yield sequences_y[i], sequences_u[i]
+
+            
 if __name__ == "__main__":
     train_ds = WHDataset(nx=2, seq_len=4, mag_range=(0.5, 0.96),
                          phase_range=(0, math.pi / 3),
