@@ -106,7 +106,7 @@ if __name__ == '__main__':
     if cfg.log_wandb:
         wandb.init(
             project="sysid-transfer",
-            #name="run1",
+            name="seed:"+str(cfg.seed),
             # track hyperparameters and run metadata
             config=vars(cfg)
         )
@@ -129,18 +129,26 @@ if __name__ == '__main__':
 
     # Create data loader
     #train_ds = LinearDynamicalDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new)
-    train_ds = NonInfiniteWHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
+    train_ds = NonInfiniteWHDataset(seq_num=100, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
                          mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                          system_seed=cfg.seed, data_seed=cfg.seed+1, fixed_system=cfg.fixed_system)
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = NonInfiniteWHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
+    val_ds = NonInfiniteWHDataset(seq_num=20, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
                        mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                        system_seed=cfg.seed if cfg.fixed_system else cfg.seed+2,
                        data_seed=cfg.seed+3, fixed_system=cfg.fixed_system)
     #val_ds = LinearDynamicalDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new)
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads)
+
+    test_ds = NonInfiniteWHDataset(seq_num=20, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny,
+                                  seq_len=cfg.seq_len_ctx + cfg.seq_len_new,
+                                  mag_range=cfg.mag_range, phase_range=cfg.phase_range,
+                                  system_seed=cfg.seed if cfg.fixed_system else cfg.seed+3,
+                                  data_seed=cfg.seed+4, fixed_system=cfg.fixed_system)
+
+    test_dl = DataLoader(test_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=1, n_u=1,
                       seq_len_ctx=cfg.seq_len_ctx, seq_len_new=cfg.seq_len_new,
@@ -175,10 +183,10 @@ if __name__ == '__main__':
         optimizer.load_state_dict(checkpoint['optimizer'])
 
     @torch.no_grad()
-    def estimate_loss():
+    def estimate_loss(dl):
         model.eval()
         loss = 0.0
-        for eval_iter, (batch_y, batch_u) in enumerate(val_dl):
+        for eval_iter, (batch_y, batch_u) in enumerate(dl):
             if device_type == "cuda":
                 batch_y = batch_y.pin_memory().to(device, non_blocking=True)
                 batch_u = batch_u.pin_memory().to(device, non_blocking=True)
@@ -204,6 +212,7 @@ if __name__ == '__main__':
     LOSS_ITR = []
     LOSS_VAL = []
     loss_val = np.nan
+    loss_test = np.nan
 
     if cfg.init_from == "scratch" or cfg.init_from == "pretrained":
         iter_num = 0
@@ -217,8 +226,9 @@ if __name__ == '__main__':
     time_start = time.time()
     for iter_num, (batch_y, batch_u) in tqdm.tqdm(enumerate(train_dl, start=iter_num)):
 
-        if (iter_num % cfg.eval_interval == 0) and iter_num > 0:
-            loss_val = estimate_loss()
+        if (iter_num % cfg.eval_interval == 0): #and iter_num > 0:
+            loss_val = estimate_loss(val_dl)
+            loss_test = estimate_loss(test_dl)
             LOSS_VAL.append(loss_val)
             print(f"\n{iter_num=} {loss_val=:.4f}\n")
             if loss_val < best_val_loss:
@@ -261,7 +271,7 @@ if __name__ == '__main__':
         if iter_num % 100 == 0:
             print(f"\n{iter_num=} {loss=:.4f} {loss_val=:.4f} {lr_iter=}\n")
             if cfg.log_wandb:
-                wandb.log({"loss": loss, "loss_val": loss_val})
+                wandb.log({"loss": loss, "loss_val": loss_val, "loss_test": loss_test})
 
         loss.backward()
         optimizer.step()
