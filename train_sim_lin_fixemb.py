@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from dataset import WHDataset, LinearDynamicalDataset, NonInfiniteWHDataset
+from dataset import WHDataset, LinearDynamicalDataset
 from torch.utils.data import DataLoader
 from transformer_sim_fixed_pos import Config, TSTransformer
 from transformer_onestep import warmup_cosine_lr
@@ -105,8 +105,8 @@ if __name__ == '__main__':
     # Init wandb
     if cfg.log_wandb:
         wandb.init(
-            project="sysid-transfer",
-            name="seed:"+str(cfg.seed),
+            project="sysid-transformers-transfer",
+            #name="run1",
             # track hyperparameters and run metadata
             config=vars(cfg)
         )
@@ -126,30 +126,21 @@ if __name__ == '__main__':
     device = torch.device(device_name)
     device_type = 'cuda' if 'cuda' in device_name else 'cpu'
     torch.set_float32_matmul_precision("high")
+
     # Create data loader
-    #train_ds = LinearDynamicalDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new)
-    train_ds = NonInfiniteWHDataset(seq_num=100, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
-                         mag_range=cfg.mag_range, phase_range=cfg.phase_range,
-                         system_seed=cfg.seed, data_seed=cfg.seed+1, fixed_system=cfg.fixed_system,
-                         )
-    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=4, worker_init_fn=seed_worker)
+    train_ds = LinearDynamicalDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new)
+    #train_ds = WHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
+    #                     mag_range=cfg.mag_range, phase_range=cfg.phase_range,
+    #                     system_seed=cfg.seed, data_seed=cfg.seed+1, fixed_system=cfg.fixed_system)
+    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=10)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = NonInfiniteWHDataset(seq_num=20, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
-                       mag_range=cfg.mag_range, phase_range=cfg.phase_range,
-                       system_seed=cfg.seed if cfg.fixed_system else cfg.seed+2,
-                       data_seed=cfg.seed+3, fixed_system=cfg.fixed_system,
-                    )
-    #val_ds = LinearDynamicalDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new)
-    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=4, worker_init_fn=seed_worker)
-
-    test_ds = NonInfiniteWHDataset(seq_num=20, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny,
-                                  seq_len=cfg.seq_len_ctx + cfg.seq_len_new,
-                                  mag_range=cfg.mag_range, phase_range=cfg.phase_range,
-                                  system_seed=cfg.seed if cfg.fixed_system else cfg.seed+3,
-                                  data_seed=cfg.seed+4, fixed_system=cfg.fixed_system)
-
-    test_dl = DataLoader(test_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads)
+    #val_ds = WHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
+    #                   mag_range=cfg.mag_range, phase_range=cfg.phase_range,
+    #                   system_seed=cfg.seed if cfg.fixed_system else cfg.seed+2,
+    #                   data_seed=cfg.seed+3, fixed_system=cfg.fixed_system)
+    val_ds = LinearDynamicalDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new)
+    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=10)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=1, n_u=1,
                       seq_len_ctx=cfg.seq_len_ctx, seq_len_new=cfg.seq_len_new,
@@ -184,10 +175,10 @@ if __name__ == '__main__':
         optimizer.load_state_dict(checkpoint['optimizer'])
 
     @torch.no_grad()
-    def estimate_loss(dl):
+    def estimate_loss():
         model.eval()
         loss = 0.0
-        for eval_iter, (batch_y, batch_u) in enumerate(dl):
+        for eval_iter, (batch_y, batch_u) in enumerate(val_dl):
             if device_type == "cuda":
                 batch_y = batch_y.pin_memory().to(device, non_blocking=True)
                 batch_u = batch_u.pin_memory().to(device, non_blocking=True)
@@ -212,9 +203,7 @@ if __name__ == '__main__':
     # Training loop
     LOSS_ITR = []
     LOSS_VAL = []
-    SKIP_ITR = []
     loss_val = np.nan
-    loss_test = np.nan
 
     if cfg.init_from == "scratch" or cfg.init_from == "pretrained":
         iter_num = 0
@@ -227,12 +216,6 @@ if __name__ == '__main__':
                      warmup_iters=cfg.warmup_iters, lr_decay_iters=cfg.lr_decay_iters)
     time_start = time.time()
     for iter_num, (batch_y, batch_u) in tqdm.tqdm(enumerate(train_dl, start=iter_num)):
-
-
-        if torch.isnan(batch_y).any():
-            print("Nan at iteration {iter_num}, skipping...") # wtf?
-            SKIP_ITR.append(iter_num)
-            continue
 
         if (iter_num % cfg.eval_interval == 0) and iter_num > 0:
             loss_val = estimate_loss()
@@ -278,7 +261,7 @@ if __name__ == '__main__':
         if iter_num % 100 == 0:
             print(f"\n{iter_num=} {loss=:.4f} {loss_val=:.4f} {lr_iter=}\n")
             if cfg.log_wandb:
-                wandb.log({"loss": loss, "loss_val": loss_val, "loss_test": loss_test})
+                wandb.log({"loss": loss, "loss_val": loss_val})
 
         loss.backward()
         optimizer.step()
