@@ -175,7 +175,7 @@ class PWHDataset(IterableDataset):
 
         G2 = drss_matrices(states=np.random.randint(1, self.nx+1) if self.random_order else self.nx,
                             inputs=self.nbr,
-                            outputs=1,
+                            outputs=self.ny,
                             strictly_proper=False, # no delay here (if one is desired, put it in G1)
                             **self.mdlargs)
         
