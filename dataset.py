@@ -48,6 +48,8 @@ class WHDataset(IterableDataset):
         self.normalize = normalize
         self.strictly_proper = strictly_proper
         self.random_order = random_order  # random number of states from 1 to nx
+        self.system_seed = system_seed
+        self.data_seed = data_seed
         self.system_rng = np.random.default_rng(system_seed)  # source of randomness for model generation
         self.data_rng = np.random.default_rng(data_seed)  # source of randomness for model generation
         self.fixed_system = fixed_system  # same model at each iteration (classical identification)
@@ -208,13 +210,22 @@ class PWHDataset(IterableDataset):
 
             yield torch.tensor(y), torch.tensor(u)
 
-            
+
+def seed_worker(worker_id):
+    worker_info = torch.utils.data.get_worker_info()
+    dataset = worker_info.dataset
+    worker_id = worker_info.id
+    dataset.data_rng = np.random.default_rng(dataset.data_seed + 1000*worker_id)
+    dataset.system_rng = np.random.default_rng(dataset.system_seed + 1000*worker_id)
+    #print(worker_id, worker_info.id)
+
+
 if __name__ == "__main__":
     train_ds = WHDataset(nx=2, seq_len=4, mag_range=(0.5, 0.96),
                          phase_range=(0, math.pi / 3),
                          system_seed=42, data_seed=445, fixed_system=False)
     # train_ds = LinearDynamicalDataset(nx=5, nu=2, ny=3, seq_len=1000)
-    train_dl = DataLoader(train_ds, batch_size=2)
+    train_dl = DataLoader(train_ds, batch_size=2, num_workers=10, worker_init_fn=seed_worker)
     batch_y, batch_u = next(iter(train_dl))
     batch_y, batch_u = next(iter(train_dl))
     print(batch_u.shape, batch_u.shape)
