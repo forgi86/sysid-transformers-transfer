@@ -137,7 +137,7 @@ class WHDataset(IterableDataset):
 
 
 class PWHDataset(IterableDataset):
-    def __init__(self, nx=50, nu=1, ny=1, nbr=10, seq_len=1024, n_hidden=128, random_order=True,
+    def __init__(self, nx=50, nu=1, ny=1, nbr=10, seq_len=1024, n_hidden=256, random_order=True,
                  strictly_proper=True, normalize=True, dtype="float32",
                  fixed_system=False, system_seed=None, data_seed=None, **mdlargs):
         super(PWHDataset).__init__()
@@ -167,16 +167,18 @@ class PWHDataset(IterableDataset):
         w2 = self.system_rng.normal(size=(self.nbr, self.n_hidden)) / np.sqrt(self.n_hidden) * 5/3 # compensates previous tanh 
         b2 = self.system_rng.normal(size=(1, self.nbr)) * 1.0
 
-        G1 = drss_matrices(states=np.random.randint(1, self.nx+1) if self.random_order else self.nx,
+        G1 = drss_matrices(states=self.system_rng.integers(1, self.nx+1) if self.random_order else self.nx,
                             inputs=self.nu,
                             outputs=self.nbr,
                             strictly_proper=self.strictly_proper,
+                            rng = self.system_rng,
                             **self.mdlargs)
 
-        G2 = drss_matrices(states=np.random.randint(1, self.nx+1) if self.random_order else self.nx,
+        G2 = drss_matrices(states=self.system_rng.integers(1, self.nx+1) if self.random_order else self.nx,
                             inputs=self.nbr,
                             outputs=self.ny,
                             strictly_proper=False, # no delay here (if one is desired, put it in G1)
+                            rng = self.system_rng,
                             **self.mdlargs)
         
         return w1, b1, w2, b2, G1, G2
@@ -196,7 +198,7 @@ class PWHDataset(IterableDataset):
         n_skip = 200
         while True:  
 
-            u = self.data_rng.normal(size=(self.seq_len + n_skip, 1))
+            u = self.data_rng.normal(size=(self.seq_len + n_skip, self.nu))
 
             # G1
             y1 = dlsim(*G1, u)
@@ -347,11 +349,15 @@ class NonInfiniteWHDataset(IterableDataset):
 
             
 if __name__ == "__main__":
-    train_ds = WHDataset(nx=2, seq_len=4, mag_range=(0.5, 0.96),
-                         phase_range=(0, math.pi / 3),
-                         system_seed=42, data_seed=445, fixed_system=False)
+    train_ds = PWHDataset(nx=50, nu=2, ny=3, seq_len=1000,
+                          fixed_system=True,
+                          system_seed=42, data_seed=445,
+                          mag_range=(0.5, 0.97), phase_range=(0.0, math.pi/2))
+    #train_ds = WHDataset(nx=2, seq_len=4, mag_range=(0.5, 0.96),
+    #                     phase_range=(0, math.pi / 3),
+    #                     system_seed=42, data_seed=445, fixed_system=False)
     # train_ds = LinearDynamicalDataset(nx=5, nu=2, ny=3, seq_len=1000)
     train_dl = DataLoader(train_ds, batch_size=2, num_workers=10, worker_init_fn=seed_worker)
     batch_y, batch_u = next(iter(train_dl))
     batch_y, batch_u = next(iter(train_dl))
-    print(batch_u.shape, batch_u.shape)
+    print(batch_u.shape, batch_y.shape)
