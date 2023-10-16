@@ -18,3 +18,6 @@ run train_sim_wh --init-from scratch --seq-len-new 100 --out-file ckpt_sim_wh_10
 
 # encoder-decoder simulation transformer transfer from 100 to 1000, starting from pre-trained
 run train_sim_wh --init-from pretrained --in-file ckpt_sim_wh --seq-len-new 1000 --fixed-lr --lr 1e-4 --out-file ckpt_sim_wh_1000_pre --log-wandb
+
+# encoder-decoder simulation transformer transfer from scratch on pwh
+run train_sim_wh --init-from scratch --out-file ckpt_sim_pwh_100 --log-wandb
