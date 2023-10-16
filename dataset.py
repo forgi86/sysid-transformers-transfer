@@ -161,29 +161,25 @@ class PWHDataset(IterableDataset):
             out = out @ w2.transpose() + b2
             return out
 
-        while True:  # infinite dataset
-            # for _ in range(1000):
-
-            n_in = 1
-            n_out = 1
+        while True:  
             n_hidden = 128
             n_skip = 200
 
-            w1 = np.random.randn(n_hidden, n_in) / np.sqrt(n_in) * 1.0
+            w1 = np.random.randn(n_hidden, self.nbr) / np.sqrt(self.nbr) * 1.0
             b1 = np.random.randn(1, n_hidden) * 1.0
-            w2 = np.random.randn(n_out, n_hidden) / np.sqrt(n_hidden) * 5/3
-            b2 = np.random.randn(1, n_out) * 1.0
+            w2 = np.random.randn(self.ny, n_hidden) / np.sqrt(n_hidden) * 5/3 # compensates previous tanh 
+            b2 = np.random.randn(1, self.nbr) * 1.0
 
             G1 = drss_matrices(states=np.random.randint(1, self.nx+1) if self.random_order else self.nx,
-                               inputs=1,
-                               outputs=1,
+                               inputs=self.nu,
+                               outputs=self.nbr,
                                strictly_proper=self.strictly_proper,
                                **self.mdlargs)
 
             G2 = drss_matrices(states=np.random.randint(1, self.nx+1) if self.random_order else self.nx,
-                               inputs=1,
+                               inputs=self.nbr,
                                outputs=1,
-                               strictly_proper=False,
+                               strictly_proper=False, # no delay here (if one is desired, put it in G1)
                                **self.mdlargs)
 
             # which kind of randomness for u?
