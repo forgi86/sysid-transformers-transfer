@@ -137,7 +137,7 @@ class WHDataset(IterableDataset):
 
 
 class PWHDataset(IterableDataset):
-    def __init__(self, nx=50, nu=1, ny=1, nbr=10, seq_len=1024, n_hidden=128, random_order=True,
+    def __init__(self, nx=50, nu=1, ny=1, nbr=10, seq_len=1024, n_hidden=256, random_order=True,
                  strictly_proper=True, normalize=True, dtype="float32",
                  fixed_system=False, system_seed=None, data_seed=None, **mdlargs):
         super(PWHDataset).__init__()
@@ -161,26 +161,27 @@ class PWHDataset(IterableDataset):
 
     def sample_system(self):
 
-            
         w1 = self.system_rng.normal(size=(self.n_hidden, self.nbr)) / np.sqrt(self.nbr) * 1.0
         b1 = self.system_rng.normal(size=(1, self.n_hidden)) * 1.0
-        w2 = self.system_rng.normal(size=(self.nbr, self.n_hidden)) / np.sqrt(self.n_hidden) * 5/3 # compensates previous tanh 
+        w2 = self.system_rng.normal(size=(self.nbr, self.n_hidden)) / np.sqrt(
+            self.n_hidden) * 5 / 3  # compensates previous tanh
         b2 = self.system_rng.normal(size=(1, self.nbr)) * 1.0
 
-        G1 = drss_matrices(states=np.random.randint(1, self.nx+1) if self.random_order else self.nx,
-                            inputs=self.nu,
-                            outputs=self.nbr,
-                            strictly_proper=self.strictly_proper,
-                            **self.mdlargs)
+        G1 = drss_matrices(states=self.system_rng.integers(1, self.nx + 1) if self.random_order else self.nx,
+                           inputs=self.nu,
+                           outputs=self.nbr,
+                           strictly_proper=self.strictly_proper,
+                           rng=self.system_rng,
+                           **self.mdlargs)
 
-        G2 = drss_matrices(states=np.random.randint(1, self.nx+1) if self.random_order else self.nx,
-                            inputs=self.nbr,
-                            outputs=self.ny,
-                            strictly_proper=False, # no delay here (if one is desired, put it in G1)
-                            **self.mdlargs)
-        
+        G2 = drss_matrices(states=self.system_rng.integers(1, self.nx + 1) if self.random_order else self.nx,
+                           inputs=self.nbr,
+                           outputs=self.ny,
+                           strictly_proper=False,  # no delay here (if one is desired, put it in G1)
+                           rng=self.system_rng,
+                           **self.mdlargs)
+
         return w1, b1, w2, b2, G1, G2
-            
 
     def __iter__(self):
 
@@ -194,9 +195,9 @@ class PWHDataset(IterableDataset):
             return out
 
         n_skip = 200
-        while True:  
+        while True:
 
-            u = self.data_rng.normal(size=(self.seq_len + n_skip, 1))
+            u = self.data_rng.normal(size=(self.seq_len + n_skip, self.nu))
 
             # G1
             y1 = dlsim(*G1, u)
@@ -217,7 +218,7 @@ class PWHDataset(IterableDataset):
             u = u.astype(self.dtype)
             y = y.astype(self.dtype)
 
-            if not self.fixed_system: # change system!
+            if not self.fixed_system:  # change system!
                 w1, b1, w2, b2, G1, G2 = self.sample_system()
 
             yield torch.tensor(y), torch.tensor(u)
@@ -231,6 +232,106 @@ def seed_worker(worker_id):
     dataset.data_rng = np.random.default_rng(dataset.data_seed + 1000*worker_id)
     dataset.system_rng = np.random.default_rng(dataset.system_seed + 1000*worker_id)
     #print(worker_id, worker_info.id)
+
+
+class NonInfinitePWHDataset(IterableDataset):
+    def __init__(self, seq_num=100, nx=50, nu=1, ny=1, nbr=10, seq_len=1024, n_hidden=256, random_order=True,
+                 strictly_proper=True, normalize=True, dtype="float32",
+                 fixed_system=False, system_seed=None, data_seed=None, **mdlargs):
+        super(PWHDataset).__init__()
+        self.seq_num = seq_num
+        self.nx = nx
+        self.nu = nu
+        self.ny = ny
+        self.nbr = nbr
+        self.seq_len = seq_len
+        self.n_hidden = n_hidden
+        self.strictly_proper = strictly_proper
+        self.dtype = dtype
+        self.normalize = normalize
+        self.strictly_proper = strictly_proper
+        self.random_order = random_order
+        self.mdlargs = mdlargs
+        self.system_seed = system_seed
+        self.data_seed = data_seed
+        self.fixed_system = fixed_system  # same model at each iteration (classical identification)
+        self.system_rng = np.random.default_rng(system_seed)  # source of randomness for model generation
+        self.data_rng = np.random.default_rng(data_seed)  # source of randomness for model generation
+
+    def sample_system(self):
+
+        w1 = self.system_rng.normal(size=(self.n_hidden, self.nbr)) / np.sqrt(self.nbr) * 1.0
+        b1 = self.system_rng.normal(size=(1, self.n_hidden)) * 1.0
+        w2 = self.system_rng.normal(size=(self.nbr, self.n_hidden)) / np.sqrt(
+            self.n_hidden) * 5 / 3  # compensates previous tanh
+        b2 = self.system_rng.normal(size=(1, self.nbr)) * 1.0
+
+        G1 = drss_matrices(states=self.system_rng.integers(1, self.nx + 1) if self.random_order else self.nx,
+                           inputs=self.nu,
+                           outputs=self.nbr,
+                           strictly_proper=self.strictly_proper,
+                           rng=self.system_rng,
+                           **self.mdlargs)
+
+        G2 = drss_matrices(states=self.system_rng.integers(1, self.nx + 1) if self.random_order else self.nx,
+                           inputs=self.nbr,
+                           outputs=self.ny,
+                           strictly_proper=False,  # no delay here (if one is desired, put it in G1)
+                           rng=self.system_rng,
+                           **self.mdlargs)
+
+        return w1, b1, w2, b2, G1, G2
+
+    def __iter__(self):
+
+        w1, b1, w2, b2, G1, G2 = self.sample_system()
+
+        # A simple ff neural network
+        def nn_fun(x):
+            out = x @ w1.transpose() + b1
+            out = np.tanh(out)
+            out = out @ w2.transpose() + b2
+            return out
+
+        tensor_list_u = []
+        tensor_list_y = []
+        n_skip = 200
+        for _ in range(self.seq_num):
+            u = self.data_rng.normal(size=(self.seq_len + n_skip, self.nu))
+
+            # G1
+            y1 = dlsim(*G1, u)
+            y1 = (y1 - y1[n_skip:].mean(axis=0)) / (y1[n_skip:].std(axis=0) + 1e-6)
+
+            # F
+            y2 = nn_fun(y1)
+
+            # G2
+            y3 = dlsim(*G2, y2)
+
+            u = u[n_skip:]
+            y = y3[n_skip:]
+
+            if self.normalize:
+                y = (y - y.mean(axis=0)) / (y.std(axis=0) + 1e-6)
+
+            u = u.astype(self.dtype)
+            y = y.astype(self.dtype)
+
+            if not self.fixed_system:  # change system!
+                w1, b1, w2, b2, G1, G2 = self.sample_system()
+
+            tensor_list_y.append(torch.tensor(y))
+            tensor_list_u.append(torch.tensor(u))
+
+        sequences_y = torch.stack(tensor_list_y)
+        sequences_u = torch.stack(tensor_list_u)
+
+        i = -1
+        while True:  # infinite repetition of the fixed sequences
+            i += 1
+            i = i % self.seq_num
+            yield sequences_y[i], sequences_u[i]
 
 
 class NonInfiniteWHDataset(IterableDataset):

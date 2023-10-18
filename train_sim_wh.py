@@ -4,9 +4,9 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from dataset import WHDataset, LinearDynamicalDataset, NonInfiniteWHDataset
+from dataset import WHDataset, LinearDynamicalDataset, NonInfiniteWHDataset, NonInfinitePWHDataset, seed_worker
 from torch.utils.data import DataLoader
-from transformer_sim_fixed_pos import Config, TSTransformer
+from transformer_sim import Config, TSTransformer
 from transformer_onestep import warmup_cosine_lr
 import tqdm
 import argparse
@@ -26,7 +26,7 @@ if __name__ == '__main__':
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
-    parser.add_argument('--seed', type=int, default=42, metavar='N',
+    parser.add_argument('--seed', type=int, default=234, metavar='N',
                         help='Seed for random number generation')
     parser.add_argument('--log-wandb', action='store_true', default=False,
                         help='disables CUDA training')
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     if cfg.log_wandb:
         wandb.init(
             project="sysid-transfer",
-            name="seed:"+str(cfg.seed),
+            name="pwh seed:"+str(cfg.seed),
             # track hyperparameters and run metadata
             config=vars(cfg)
         )
@@ -128,28 +128,28 @@ if __name__ == '__main__':
     torch.set_float32_matmul_precision("high")
     # Create data loader
     #train_ds = LinearDynamicalDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new)
-    train_ds = NonInfiniteWHDataset(seq_num=100, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
+    train_ds = NonInfinitePWHDataset(seq_num=100, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
                          mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                          system_seed=cfg.seed, data_seed=cfg.seed+1, fixed_system=cfg.fixed_system,
                          )
-    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=4, worker_init_fn=seed_worker)
+    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=1)#, worker_init_fn=seed_worker)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = NonInfiniteWHDataset(seq_num=20, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
+    val_ds = NonInfinitePWHDataset(seq_num=20, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new,
                        mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                        system_seed=cfg.seed if cfg.fixed_system else cfg.seed+2,
                        data_seed=cfg.seed+3, fixed_system=cfg.fixed_system,
                     )
     #val_ds = LinearDynamicalDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len_ctx+cfg.seq_len_new)
-    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=4, worker_init_fn=seed_worker)
+    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=1)#, worker_init_fn=seed_worker)
 
-    test_ds = NonInfiniteWHDataset(seq_num=20, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny,
+    test_ds = NonInfinitePWHDataset(seq_num=20, nx=cfg.nx, nu=cfg.nu, ny=cfg.ny,
                                   seq_len=cfg.seq_len_ctx + cfg.seq_len_new,
                                   mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                                   system_seed=cfg.seed if cfg.fixed_system else cfg.seed+3,
                                   data_seed=cfg.seed+4, fixed_system=cfg.fixed_system)
 
-    test_dl = DataLoader(test_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads)
+    test_dl = DataLoader(test_ds, batch_size=cfg.eval_batch_size, num_workers=1)#cfg.threads)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=1, n_u=1,
                       seq_len_ctx=cfg.seq_len_ctx, seq_len_new=cfg.seq_len_new,
@@ -234,8 +234,9 @@ if __name__ == '__main__':
             SKIP_ITR.append(iter_num)
             continue
 
-        if (iter_num % cfg.eval_interval == 0) and iter_num > 0:
-            loss_val = estimate_loss()
+        if (iter_num % cfg.eval_interval == 0): # and iter_num > 0:
+            loss_val = estimate_loss(val_dl)
+            loss_test = estimate_loss(test_dl)
             LOSS_VAL.append(loss_val)
             print(f"\n{iter_num=} {loss_val=:.4f}\n")
             if loss_val < best_val_loss:
