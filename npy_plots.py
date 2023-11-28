@@ -1,7 +1,6 @@
-import wandb
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib
+from matplotlib.lines import Line2D
 
 LINEWIDTH_IFAC_CONF = 251.8068
 LINEWIDTH_L_CSS = 251.8068
@@ -65,41 +64,32 @@ plt.rcParams.update({"axes.grid": True})
 
 fig, ax = plt.subplots(1, 1, figsize=(3.4842507264425073, 2.1533853742679816))
 
-api = wandb.Api()
-
-all_losses = []
-all_losses_val = []
+out = []
+errs_trained = []
+errs_initial = []
 for s in range(50):
-    runs = api.runs("leon-pura/sysid-transfer", filters={"display_name": f"test wh seed:{s+1}"})
+    arr = np.load(f"models/outputs_model_pwh_seed_{s+1}.npy")
+    out.append(arr[0])
+    errs_initial.append(arr[0] - arr[1])
+    errs_trained.append(arr[0] - arr[2])
 
-    run = runs[0]
+#ax.plot(np.array(out).T, c='black')
 
-    history = run.scan_history()
-    losses = [row["loss"] for row in history]
-    losses_val = [row["loss_val"] for row in history]
+# Calculate the quantiles
+quantile_25 = np.quantile(np.abs(np.array(errs_initial)), q=0.25, axis=0)
+quantile_75 = np.quantile(np.abs(np.array(errs_initial)), q=0.75, axis=0)
 
-    ax.plot(losses_val)
+quantile_25_t = np.quantile(np.abs(np.array(errs_trained)), q=0.25, axis=0)
+quantile_75_t = np.quantile(np.abs(np.array(errs_trained)), q=0.75, axis=0)
 
-    all_losses.append(losses)
-    all_losses_val.append(losses_val)
+# Fill between the quantiles
+ax.fill_between(np.arange(len(quantile_25)), quantile_25, quantile_75, color='red', alpha=0.3, label='Pre-trained')
+ax.fill_between(np.arange(len(quantile_25_t)), quantile_25_t, quantile_75_t, color='green', alpha=0.3, label='Fine-tuned')
 
-all_losses = np.array(all_losses)
-all_losses_val = np.array(all_losses_val)
-mean_loss = np.mean(all_losses_val, axis=0)
-ax.plot(mean_loss, c='black', linewidth=2, label='Mean loss')
+# ax.plot(np.median(np.abs(np.array(errs_initial)), axis=0), c='red', label='1')
+# ax.plot(np.median(np.abs(np.array(errs_trained)), axis=0), c='green', label='2')
 
-# runs = api.runs("leon-pura/sysid-transfer", filters={"display_name": "infinite data"})
-# run = runs[0]
-#
-# history = run.scan_history()
-# losses_inf = [float(row["loss"]) for row in history]
-# losses_inf = np.array(losses_inf)[2:102]
-# plt.plot(losses_inf, c='red', linewidth=4)
-
-plt.xlabel("Iteration")
-plt.ylabel("Training loss")
-
-plt.title("WH re-tuning, training loss")
 plt.legend()
-plt.savefig("C:/Users/puraf/Downloads/wh_train_loss.pdf", format="pdf", bbox_inches="tight")
+plt.xlabel("time step (-)")
+plt.savefig("C:/Users/puraf/Downloads/pwh_error_25_75_percentile.pdf", format="pdf", bbox_inches="tight")
 plt.show()

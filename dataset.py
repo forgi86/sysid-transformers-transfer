@@ -238,7 +238,7 @@ class NonInfinitePWHDataset(IterableDataset):
     def __init__(self, seq_num=100, nx=50, nu=1, ny=1, nbr=10, seq_len=1024, n_hidden=256, random_order=True,
                  strictly_proper=True, normalize=True, dtype="float32",
                  fixed_system=False, system_seed=None, data_seed=None, **mdlargs):
-        super(PWHDataset).__init__()
+        super(NonInfinitePWHDataset).__init__()
         self.seq_num = seq_num
         self.nx = nx
         self.nu = nu
