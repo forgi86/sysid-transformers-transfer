@@ -1,7 +1,6 @@
 import wandb
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib
 
 LINEWIDTH_IFAC_CONF = 251.8068
 LINEWIDTH_L_CSS = 251.8068
@@ -63,14 +62,16 @@ def set_size(width, fraction=1):
 plt.rcParams.update(tex_fonts) # use latex fonts
 plt.rcParams.update({"axes.grid": True})
 
-fig, ax = plt.subplots(1, 1, figsize=(3.4842507264425073, 2.1533853742679816))
+fig, ax = plt.subplots(1, 1, figsize=(3.4842507264425073 * 3 / 4, 2.1533853742679816))
 
 api = wandb.Api()
 
 all_losses = []
 all_losses_val = []
+x = [i * 100 for i in range(100)]
+
 for s in range(50):
-    runs = api.runs("leon-pura/sysid-transfer", filters={"display_name": f"test wh seed:{s+1}"})
+    runs = api.runs("leon-pura/sysid-transfer", filters={"display_name": f"test pwh seed:{s+1}"})
 
     run = runs[0]
 
@@ -78,7 +79,7 @@ for s in range(50):
     losses = [row["loss"] for row in history]
     losses_val = [row["loss_val"] for row in history]
 
-    ax.plot(losses_val)
+    ax.plot(x, losses_val)
 
     all_losses.append(losses)
     all_losses_val.append(losses_val)
@@ -86,7 +87,7 @@ for s in range(50):
 all_losses = np.array(all_losses)
 all_losses_val = np.array(all_losses_val)
 mean_loss = np.mean(all_losses_val, axis=0)
-ax.plot(mean_loss, c='black', linewidth=2, label='Mean loss')
+ax.plot(x, mean_loss, c='black', linewidth=2, label='Mean loss')
 
 # runs = api.runs("leon-pura/sysid-transfer", filters={"display_name": "infinite data"})
 # run = runs[0]
@@ -97,9 +98,9 @@ ax.plot(mean_loss, c='black', linewidth=2, label='Mean loss')
 # plt.plot(losses_inf, c='red', linewidth=4)
 
 plt.xlabel("Iteration")
-plt.ylabel("Training loss")
+plt.ylabel("Validation loss")
 
-plt.title("WH re-tuning, training loss")
+# plt.title("WH re-tuning, training loss")
 plt.legend()
-plt.savefig("C:/Users/puraf/Downloads/wh_train_loss.pdf", format="pdf", bbox_inches="tight")
+plt.savefig("pwh_val_loss.pdf", format="pdf", bbox_inches="tight")
 plt.show()

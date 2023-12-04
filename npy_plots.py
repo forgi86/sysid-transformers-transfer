@@ -68,7 +68,7 @@ out = []
 errs_trained = []
 errs_initial = []
 for s in range(50):
-    arr = np.load(f"models/outputs_model_pwh_seed_{s+1}.npy")
+    arr = np.load(f"models/outputs_model_wh_seed_{s+1}.npy")
     out.append(arr[0])
     errs_initial.append(arr[0] - arr[1])
     errs_trained.append(arr[0] - arr[2])
@@ -90,6 +90,7 @@ ax.fill_between(np.arange(len(quantile_25_t)), quantile_25_t, quantile_75_t, col
 # ax.plot(np.median(np.abs(np.array(errs_trained)), axis=0), c='green', label='2')
 
 plt.legend()
+plt.ylabel("absolute error")
 plt.xlabel("time step (-)")
-plt.savefig("C:/Users/puraf/Downloads/pwh_error_25_75_percentile.pdf", format="pdf", bbox_inches="tight")
+plt.savefig("wh_error_25_75_percentile.pdf", format="pdf", bbox_inches="tight")
 plt.show()
