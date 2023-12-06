@@ -23,8 +23,8 @@ The examples discussed in the paper and available in the repository illustrate:
 
 # Results
 ## Adaptation from 100 to 1000 simulation steps
-* Training a 1000-step-ahead simulation meta-model from scratch seems to be feasible (orange curve)
-* Training a 100-step-ahead simulation meta-model from scratch is feasible (blue curve), as also shown in out previous paper
+* Training a 1000-step-ahead simulation meta-model from scratch does not seem to be work (orange curve)
+* Training a 100-step-ahead simulation meta-model from scratch is feasible (blue curve), as also shown in one of our [previous works](https://github.com/forgi86/sysid-transformers)
 * Training a 1000-step-ahead meta-model initializing the optimization from the 100-step case works (green curve)!
   
 <img src="doc/paper/img/short_long/wh_pretrain_iterations.png"  width="700">
