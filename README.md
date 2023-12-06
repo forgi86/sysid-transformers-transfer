@@ -22,7 +22,7 @@ The examples discussed in the paper and available in the repository illustrate:
  * Adaptation from 100-step-ahead to 1000-step-ahead simulation
 
 # Results
-## Adaptation from 100 to 1000 step-ahead simulation
+## Adaptation from 100 to 1000 simulation steps
 * Training a 1000-step-ahead simulation meta-model from scratch seems to be feasible (orange curve)
 * Training a 100-step-ahead simulation meta-model from scratch is feasible (blue curve), as also shown in out previous paper
 * Training a 1000-step-ahead meta-model initializing the optimization from the 100-step case works (green curve)!
