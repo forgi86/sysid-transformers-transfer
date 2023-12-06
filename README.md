@@ -1,7 +1,7 @@
 # In-context learning for model-free system identification
 
 This repository contains the Python code to reproduce the results of the paper [On the adaptation of in-context learners for system identification](http://arxiv.org/abs/2308.13380)
-by Marco Forgione, Filippo Pura and Dario Piga.
+by Dario Piga, Filippo Pura and Marco Forgione.
 
 
 ## Abstract
