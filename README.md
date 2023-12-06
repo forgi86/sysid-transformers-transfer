@@ -12,7 +12,7 @@ In-context  system identification  aims at constructing meta-models to describe 
 The meta-model for n-step-ahead simulation is an encoder-decoder Transformer:
 
 <!-- ![Encoder-decoder transformer](fig/encoder_decoder_architecture.png "Generalized multi-step-ahead simulation") -->
-<img src="doc/paper/fig/architecture/encoder_decoder_architecture.png"  width="1400">
+<img src="doc/paper/img/architecture/encoder_decoder_architecture.png"  width="1400">
 
 # Experiments:
 The examples discussed in the paper and available in the repository illustrate:
@@ -23,7 +23,11 @@ The examples discussed in the paper and available in the repository illustrate:
 
 # Results
 ## Adaptation from 100 to 1000 step-ahead simulation
-<img src="doc/paper/img/architecture/encoder_decoder_architecture.png"  width="1400">
+* Training a 1000-step-ahead simulation meta-model from scratch seems to be feasible (orange curve)
+* Training a 100-step-ahead simulation meta-model from scratch is feasible (blue curve), as also shown in out previous paper
+* Training a 1000-step-ahead meta-model initializing the optimization from the 100-step case works (green curve)!
+  
+<img src="doc/paper/img/short_long/wh_pretrain_iterations.png"  width="700">
 
 # Software requirements
 Experiments were performed on a Python 3.11 environment with:
