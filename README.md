@@ -21,6 +21,10 @@ The examples discussed in the paper and available in the repository illustrate:
  * Adaptation from system class to system out of the class
  * Adaptation from 100-step-ahead to 1000-step-ahead simulation
 
+# Results
+## Adaptation from 100 to 1000 step-ahead simulation
+<img src="doc/paper/img/architecture/encoder_decoder_architecture.png"  width="1400">
+
 # Software requirements
 Experiments were performed on a Python 3.11 environment with:
 
@@ -35,6 +39,7 @@ In a conda environment, these dependencies may be installed with the commands:
 conda install numpy scipy matplotlib
 conda install pytorch -c pytorch
 ```
+
 
 # Hardware requirements
 While the scripts can run on CPU, execution may be frustratingly slow. For faster training, a GPU is highly recommended.
