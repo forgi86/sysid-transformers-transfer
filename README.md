@@ -1,68 +1,53 @@
 # In-context learning for model-free system identification
 
-This repository contains the Python code to reproduce the results of the paper [In-context learning for model-free system identification](http://arxiv.org/abs/2308.13380)
-by Marco Forgione, Filippo Pura and Dario Piga.
+This repository contains the Python code to reproduce the results of the paper [On the adaptation of in-context learners for system identification](http://arxiv.org/abs/2308.13380)
+by Dario Piga, Filippo Pura and Marco Forgione.
 
 
-We introduce the concept of model-free in-context learning for System Identification, where a *meta model* is trained to describe an entire class of dynamical systems,
-instead of a single instance. The meta model is able to understand the underlying dynamics from a context of provided input/output samples and to 
-perform a task such as one-step-ahead prediction or multi-step-ahead simulation, that would otherwise require a model trained on each particular dataset.
+## Abstract
+In-context  system identification  aims at constructing meta-models to describe classes of systems, differently from traditional approaches that model  single systems. This paradigm facilitates the leveraging of knowledge acquired from observing the behaviour of different, yet related dynamics. This paper discusses  the role of meta-model adaptation. Through numerical examples, we demonstrate how meta-model adaptation can enhance predictive performance in three realistic scenarios: tailoring the meta-model to describe a specific system rather than a class; extending the meta-model to capture the behaviour of systems beyond the initial training class; and recalibrating the model for new prediction tasks. Results highlight the effectiveness of meta-model adaptation to achieve a more robust and versatile meta-learning framework for system identification.
 
+## Architecture
 
-## One-step-ahead model-free prediction
+The meta-model for n-step-ahead simulation is an encoder-decoder Transformer:
 
-Decoder-only (GPT-like) Transformer architecture for model-free one-step-ahead prediction: 
+<!-- ![Encoder-decoder transformer](fig/encoder_decoder_architecture.png "Generalized multi-step-ahead simulation") -->
+<img src="doc/paper/img/architecture/encoder_decoder_architecture.png"  width="1400">
 
-<!-- ![GPT-like model-free prediction](fig/decoder_architecture.png "Generalized one-step-ahead predictor") -->
-<img src="doc/paper/fig/architecture/decoder_architecture.png"  width="500">
+# Experiments:
+The examples discussed in the paper and available in the repository illustrate:
+ * Meta-generalization (without adaptation) from different data distributions
+ * Adaptation from system class to system within the class
+ * Adaptation from system class to system out of the class
+ * Adaptation from 100-step-ahead to 1000-step-ahead simulation
 
-## Multi-step-ahead model-free simulation
-
-Encoder-decoder (machine-translation-like) Transformer architecture for model-free multi-step-ahead simulation:
-
-<!-- ![machine-translation-like model-free simulation](fig/encoder_decoder_architecture.png "Generalized multi-step-ahead simulation") -->
-<img src="doc/paper/fig/architecture/encoder_decoder_architecture.png"  width="1400">
-
-# Main files
-
-The training scripts are:
-
-* [train_onestep_lin.py](train_onestep_lin.py): Decoder-only Transformer for one-step-ahead prediction on the LTI system class 
-* [train_onestep_wh.py](train_onestep_wh.py): Decoder-only Transformer for one-step-ahead prediction on the WH system class 
-* [train_sim_lin.py](train_sim_lin.py): Encoder-decoder Transformer for multi-step-ahead simulation on the LTI system class 
-* [train_sim_wh.py](train_sim_wh.py): Encoder-decoder Transformer for multi-step-ahead simulation on the WH system class 
-
-The scripts above except ``train_onestep_lin.py`` accept command-line arguments to customize the architecture and aspects of the training. 
-For instance, the large one-step-ahead Transformer for the WH class described in the paper may be trained with the command:
-
-```
-python train_onestep_wh.py --out-file ckpt_onestep_wh_large --seq-len 1024  --n-layer 12 --n-head 12 --n-embd 768 --batch-size 20 --cuda-device cuda:1
-```
-
-Already-trained weights of all the Transformers discussed in the example reported in the paper are available as assets in the [v0.2 Release](https://github.com/forgi86/sysid-transformers/releases/tag/v0.2).
-
-Jupyter notebooks that load the trained model and make predictions/simulations on new data are also available in the repo, e.g. [test_onestep_lin.ipynb](test_onestep_lin.ipynb) for one-step prediction on the LTI class.
+# Results
+## Adaptation from 100 to 1000 simulation steps
+* Training a 1000-step-ahead simulation meta-model from scratch does not seem to work (orange curve)
+* Training a 100-step-ahead simulation meta-model from scratch is feasible (blue curve), as also shown in one of our [previous works](https://github.com/forgi86/sysid-transformers)
+* Training a 1000-step-ahead meta-model initializing the optimization from weights of the 100-step case works (green curve)!
+  
+<img src="doc/paper/img/short_long/wh_pretrain_iterations.png"  width="700">
 
 # Software requirements
-Experiments were performed on a Python 3.11 conda environment with
+Experiments were performed on a Python 3.11 environment with:
 
  * numpy
  * scipy
  * matplotlib
- * python-control
- * pytorch (v2.0.1)
+ * pytorch (v2.1.0)
  
-These dependencies may be installed through the commands:
+In a conda environment, these dependencies may be installed with the commands:
 
 ```
 conda install numpy scipy matplotlib
-conda install -c conda-forge control slycot
 conda install pytorch -c pytorch
 ```
 
+
 # Hardware requirements
 While the scripts can run on CPU, execution may be frustratingly slow. For faster training, a GPU is highly recommended.
-To run the paper's examples, we utilized a dedicated server equipped with an nVidia RTX 3090 GPU.
+We used a server equipped with an Nvidia RTX 3090 GPU.
 
 <!--
 

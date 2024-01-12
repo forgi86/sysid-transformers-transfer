@@ -1,4 +1,46 @@
+%===============================================================================
+% Sample bibliopgraphy file for ifaconf.bst style to be used in
+% IFAC meeting papers
+% Copyright (c) 2007-2008 International Federation of Automatic Control
+%===============================================================================
+
+
+
+
+
+@article{forgione2023context,
+  author={Forgione, Marco and Pura, Filippo and Piga, Dario},
+  journal={IEEE Control Systems Letters}, 
+  title={From System Models to Class Models: An In-Context Learning Paradigm}, 
+  year={2023},
+  volume={},
+  number={},
+  pages={1-1},
+  doi={10.1109/LCSYS.2023.3335036}}
+}
+
+
 %META LEARNING
+
+@article{zhan2022calibrating,
+  title={Calibrating building simulation models using multi-source datasets and meta-learned Bayesian optimization},
+  author={Zhan, Sicheng and Wichern, Gordon and Laughman, Christopher and Chong, Adrian and Chakrabarty, Ankush},
+  journal={Energy and Buildings},
+  volume={270},
+  pages={112278},
+  year={2022},
+  publisher={Elsevier}
+}
+
+@article{richards2021adaptive,
+  title={Adaptive-Control-Oriented Meta-Learning for Nonlinear Systems},
+  author={Richards, SM and Azizan, Navid and Slotine, Jean-Jacques E. and Pavone, Marco},
+  journal={Proceedings of the Robotics: Science and Systems (RSS)},
+  year={2021},
+  url={https://arxiv.org/abs/2103.04490}
+}
+
+
 
 %Survey
 @article{hospedales2021meta,
@@ -10,6 +52,13 @@
   pages={5149--5169},
   year={2021},
   publisher={IEEE}
+}
+
+@phdthesis{schmidhuber1987evolutionary,
+  title={Evolutionary principles in self-referential learning, or on learning how to learn: the meta-meta-... hook},
+  author={Schmidhuber, J{\"u}rgen},
+  year={1987},
+  school={Technische Universit{\"a}t M{\"u}nchen}
 }
 
 %Learning2learn
@@ -39,6 +88,29 @@
   year={2022}
 }
 
+@article{pillonetto2023deep,
+  title={Deep networks for system identification: a Survey},
+  author={Pillonetto, Gianluigi and Aravkin, Aleksandr and Gedon, Daniel and Ljung, Lennart and Ribeiro, Ant{\^o}nio H and Sch{\"o}n, Thomas B},
+  journal={arXiv preprint arXiv:2301.12832},
+  year={2023}
+}
+
+
+@article{garg2022can,
+  title={What can transformers learn in-context? a case study of simple function classes},
+  author={Garg, Shivam and Tsipras, Dimitris and Liang, Percy S and Valiant, Gregory},
+  journal={Advances in Neural Information Processing Systems},
+  volume={35},
+  pages={30583--30598},
+  year={2022}
+}
+
+@article{kirsch2022general,
+  title={General-purpose in-context learning by meta-learning transformers},
+  author={Kirsch, Louis and Harrison, James and Sohl-Dickstein, Jascha and Metz, Luke},
+  journal={arXiv preprint arXiv:2212.04458},
+  year={2022}
+}
 
 @article{wang2021survey,
   title={A survey on curriculum learning},
@@ -77,6 +149,15 @@
 }
 
  
+@article{bamieh2002identification,
+  title={Identification of linear parameter varying models},
+  author={Bamieh, Bassam and Giarre, Laura},
+  journal={International Journal of Robust and Nonlinear Control},
+  volume={12},
+  number={9},
+  pages={841--853},
+  year={2002}
+}
 
 %MAML in system identification
 @inproceedings{chakrabarty2023meta,
@@ -84,8 +165,7 @@ author = {Chakrabarty, Ankush and Wichern, Gordon and Laughman, Christopher R.},
 title = {Meta-Learning of Neural State-Space Models Using Data From Similar Systems},
 booktitle = {World Congress of the International Federation of Automatic Control (IFAC)},
 year = 2023,
-month = jul,
-url = {https://www.merl.com/publications/TR2023-087}
+month = jul
 }
 
 #%GPT one-step-ahead
@@ -196,6 +276,17 @@ url = {https://www.merl.com/publications/TR2023-087}
   year={2005} 
 }
 
+@article{bombois2006least,
+  title={Least costly identification experiment for control},
+  author={Bombois, Xavier and Scorletti, G{\'e}rard and Gevers, Michel and Van den Hof, Paul MJ and Hildebrand, Roland},
+  journal={Automatica},
+  volume={42},
+  number={10},
+  pages={1651--1662},
+  year={2006},
+  publisher={Elsevier}
+}
+
 @article{piga2019performance,
   title={Performance-oriented model learning for data-driven {MPC} design},
   author={Piga, Dario and Forgione, Marco and Formentin, Simone and Bemporad, Alberto},
@@ -221,6 +312,27 @@ url = {https://www.merl.com/publications/TR2023-087}
   volume={73},
   pages={155--162},
   year={2016} 
+}
+
+
+@article{mejari2020recursive,
+  title={Recursive bias-correction method for identification of piecewise affine output-error models},
+  author={Mejari, Manas and Breschi, Valentina and Piga, Dario},
+  journal={IEEE Control Systems Letters},
+  volume={4},
+  number={4},
+  pages={970--975},
+  year={2020}
+}
+
+@article{masti2021learning,
+  title={Learning nonlinear state--space models using autoencoders},
+  author={Masti, Daniele and Bemporad, Alberto},
+  journal={Automatica},
+  volume={129},
+  pages={109666},
+  year={2021},
+  publisher={Elsevier}
 }
 
 @article{mejari2020identification,
@@ -252,13 +364,8 @@ url = {https://www.merl.com/publications/TR2023-087}
   year={2023} 
 }
 
-@article{masti2021learning,
-  title={Learning nonlinear state--space models using autoencoders},
-  author={Masti, Daniele and Bemporad, Alberto},
-  journal={Automatica},
-  volume={129}, 
-  year={2021} 
-}
+
+
 
 @article{forgione2021continuous,
   title={Continuous-time system identification with neural networks: Model structures and fitting criteria},
@@ -298,4 +405,33 @@ url = {https://www.merl.com/publications/TR2023-087}
   author={Loshchilov, Ilya and Hutter, Frank},
   journal={arXiv preprint arXiv:1711.05101},
   year={2017}
+}
+
+@book{van2012subspace,
+  title={Subspace identification for linear systems: Theory—Implementation—Applications},
+  author={Van Overschee, Peter and De Moor, BL0888},
+  year={2012},
+  publisher={Springer Science \& Business Media}
+}
+
+
+@article{forgione2023adaptation,
+  title={On the adaptation of recurrent neural networks for system identification},
+  author={Forgione, Marco and Muni, Aneri and Piga, Dario and Gallieri, Marco},
+  journal={Automatica},
+  volume={155},
+  pages={111092},
+  year={2023},
+  publisher={Elsevier}
+}
+
+@article{pozzoli2020tustin,
+  title={Tustin neural networks: a class of recurrent nets for adaptive MPC of mechanical systems},
+  author={Pozzoli, Simone and Gallieri, Marco and Scattolini, Riccardo},
+  journal={IFAC-PapersOnLine},
+  volume={53},
+  number={2},
+  pages={5171--5176},
+  year={2020},
+  publisher={Elsevier}
 }
