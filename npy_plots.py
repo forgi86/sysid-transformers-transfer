@@ -90,7 +90,7 @@ ax.fill_between(np.arange(len(quantile_25_t)), quantile_25_t, quantile_75_t, col
 # ax.plot(np.median(np.abs(np.array(errs_trained)), axis=0), c='green', label='2')
 
 plt.legend()
-plt.ylabel("absolute error")
-plt.xlabel("time step (-)")
+plt.ylabel("Absolute error")
+plt.xlabel("Time step (-)")
 plt.savefig("wh_error_25_75_percentile.pdf", format="pdf", bbox_inches="tight")
 plt.show()
