@@ -1,4 +1,4 @@
-# In-context learning for model-free system identification
+# On the adaptation of in-context learners for system identification
 
 This repository contains the Python code to reproduce the results of the paper [On the adaptation of in-context learners for system identification](http://arxiv.org/abs/2308.13380)
 by Dario Piga, Filippo Pura and Marco Forgione.
@@ -22,10 +22,10 @@ The examples discussed in the paper and available in the repository illustrate:
  * Adaptation from 100-step-ahead to 1000-step-ahead simulation
 
 # Results
-## Adaptation from 100 to 1000 step-ahead simulation
-* Training a 1000-step-ahead simulation meta-model from scratch seems to be feasible (orange curve)
-* Training a 100-step-ahead simulation meta-model from scratch is feasible (blue curve), as also shown in out previous paper
-* Training a 1000-step-ahead meta-model initializing the optimization from the 100-step case works (green curve)!
+## Adaptation from 100 to 1000 simulation steps
+* Training a 1000-step-ahead simulation meta-model from scratch does not seem to work (orange curve)
+* Training a 100-step-ahead simulation meta-model from scratch is feasible (blue curve), as also shown in one of our [previous works](https://github.com/forgi86/sysid-transformers)
+* Training a 1000-step-ahead meta-model initializing the optimization from weights of the 100-step case works (green curve)!
   
 <img src="doc/paper/img/short_long/wh_pretrain_iterations.png"  width="700">
 
