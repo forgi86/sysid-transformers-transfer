@@ -42,7 +42,7 @@
 }
 
 
-\title[In-context learning sysid]{\textsc{In-context learning for model-free system identification}}
+\title[In-context learning sysid]{\textsc{On the adaptation of in-context learners for system identification}}
 
 
 %\author[]{Marco Forgione\inst{1}, Filippo Pura\inst{1}, Dario Piga\inst{1}}
@@ -53,7 +53,7 @@
 	}
 
 
-\date[]{September 7, 2023}
+\date[SYSID 2024]{SYSID 2024 \\ 17-18 July 2024, Boston, USA}
 %\date[]{\today}
 
 
@@ -150,9 +150,12 @@ Many meta learning strategies around. Here focus on \structure{in-context learni
 \item The Transformer must \structure{learn to identify} the system to solve the task!
 \end{itemize}
 \vskip 1em
-%\pause
+
+\pause
+
 Context + task may be seen as a \structure{prompt} to a Large Language Model, which can then
 \structure{continue the word sequence} in an optimal way.
+
 
 \vskip 2em
 
@@ -181,179 +184,69 @@ Context + task may be seen as a \structure{prompt} to a Large Language Model, wh
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Two system identification problems}
-\begin{columns}[t]
-\column{.48\textwidth}
-\begin{block}{One-step prediction:}
-$$\hat y_{k+1} = \free_\phi(u_{1:k}, y_{1:k})$$
-\begin{itemize}
-\item $(u_1, y_1) \rightarrow \hat y_2$
-\item $(u_{1:2}, y_{1:2}) \rightarrow \hat y_3$
-\item $(u_{1:3}, y_{1:3}) \rightarrow \hat y_4$
-\item $\dots$
-\item $(u_{1:\nsamp-1}, y_{1:\nsamp-1}) \rightarrow \hat y_\nsamp$
-\end{itemize}
-\end{block}
-\column{.48\textwidth}
-\begin{block}{Multi-step simulation}
-\vskip -1em
-$$\hat y_{m+1:N} = \free_\phi(u_{1:m}, y_{1:m}, u_{m+1:N})$$
-%\vskip .8em
-Meta-model receives:
-\begin{enumerate}
-\item Full input/output $(u_{1:m}, y_{1:m})$
-\item Input-only trajectory $u_{m+1:\nsamp}$
-\end{enumerate}
-%\vskip 1em
-and generates simulation:
-$\hat y_{m+1:N}$
-\vskip 1em
-\begin{itemize}
-\item $u_{1:m}, y_{1:m}, u_{m+1:N} \rightarrow \hat y_{m+1:N}$
-\end{itemize}
-\end{block}
-\end{columns}
-\pause
-\vskip 1em
-\begin{itemize}
-\item If we manage to train a Transformer $\free_\phi$  to solve such problems \structure{for a class of systems}, it becomes a \structure{meta model} of that class!
-\item $ \free_\phi$ becomes \structure{as powerful as a system identification algorithm}!
-\end{itemize}
-\end{frame}
 
+\begin{frame}{Multi-step simulation}
+%     \begin{columns}[t]
+%     \column{.48\textwidth}
+%     \begin{block}{Multi-step simulation}
+%     \vskip -1em
+     Meta-model trained to predict $\hat y_{m+1:N} = \free_\phi(u_{1:m}, y_{1:m}, u_{m+1:N})$
+     %\vskip .8em
+     %Meta-model receives:
+     \begin{itemize}
+     \item Full I/O sequence $(u_{1:m}, y_{1:m})$ characterizes the dynamics (context)
+     \item Input squence $u_{m+1:N}$ defines the simulation objective (task) 
+     \end{itemize}
+     \begin{figure}
+          \includegraphics[height=150 pt]{fig/architecture/encoder_decoder_architecture.pdf}
+          %encoder-decoder ($\sim$ language translation)
+     \end{figure}
+     %\vskip 1em
+     %and generates simulation:
+     %$\hat y_{m+1:N}$
+     %\vskip 1em
+     %\begin{itemize}
+     %\item $u_{1:m}, y_{1:m}, u_{m+1:N} \rightarrow \hat y_{m+1:N}$
+     %\end{itemize}
+%     \end{block}
+%     \end{columns}
+     \pause
+     %\vskip 1em
+     \begin{itemize}
+     \item The Transformer $\free_\phi$  becomes a  \structure{meta model} of the system class!
+     \item $ \free_\phi$ becomes \structure{as powerful as a system identification algorithm}!
+     \end{itemize}
+     \end{frame}
+     
 \begin{frame}{Meta model training}
-\begin{columns}[t]
-\column{.48\textwidth}
-\begin{block}{One-step prediction:}
-\begin{tiny}
-$$\hat \phi = \arg \min_\phi \mathcal{L}_{\rm pred}(\phi)$$
-\begin{equation*}
-	\label{eq:one_step_objective}
-     \mathcal{L}_{\rm pred}(\phi) = \E_{p(\D)}
-    \left [ \sum_{k=1}^{\nsamp-1}
-    \norm{y_{k+1} -
-    \free_\phi (y_{1:k}, u_{1:k})
-    }^2
-    \right ]
-\end{equation*}
-\vskip -1.5em
-\begin{equation*}\label{eq:eq:one_step_objective_samples}
-\mathcal{L}_{\rm pred}(\phi)  \approx  \frac{1}{b}
-    \sum_{i=1}^b
-    \sum_{k=1}^{\nsamp-1}
-    \norm{y_{k+1}^{(i)} -
-    \free_\phi (y^{(i)}_{1:k}, u_{1:k}^{(i)})}^2
-\end{equation*}
-\end{tiny}
-\end{block}
-\column{.48\textwidth}
-\begin{block}{Multi-step simulation}
-\begin{tiny}
-$$\hat \phi = \arg \min_\phi \mathcal{L}_{\rm sim}(\phi)$$
-\begin{equation*}
-	\label{eq:simulation_objective}
-   \mathcal{L}_{\rm sim}(\phi)  \! = \!  \E_{p(\D)}
-    \left [
-    \norm{y_{m+1:\nsamp} \! - \! \free_\phi (u_{1:m}, y_{1:m}, u_{m+1:\nsamp})
-    }^2
-    \right ]
-\end{equation*}
-
+Meta model trained in a standard \structure{supervised learning} setting: 
+\begin{small}
+     $$\hat \phi = \arg \min_\phi \mathcal{L}_{\rm sim}(\phi)$$
 \begin{align*}
-	\label{eq:simulation_objective_samples}
-     \mathcal{L}_{\rm sim}(\phi)   \approx
-    \frac{1}{b}
-    \sum_{i=1}^b
-    %
-    \norm{y_{m+1:\nsamp}^{(i)} - \free_\phi (u_{1:m}^{(i)}, y_{1:m}^{(i)}, u_{m+1:\nsamp}^{(i)})}^2
+     \mathcal{L}_{\rm sim}(\phi)   &=   \E_{p(\D)}
+     \left [
+     \norm{y_{m+1:\nsamp} \! - \! \free_\phi (u_{1:m}, y_{1:m}, u_{m+1:\nsamp})
+     }^2
+     \right ] \\
+      & \approx
+     \frac{1}{b}
+     \sum_{i=1}^b
+     %
+     \norm{y_{m+1:\nsamp}^{(i)} - \free_\phi (u_{1:m}^{(i)}, y_{1:m}^{(i)}, u_{m+1:\nsamp}^{(i)})}^2
 \end{align*}
-\end{tiny}
-\end{block}
-\end{columns}
+\end{small}
+
 \pause
-\vskip 1em
 \begin{itemize}
-\item Formally, just two \structure{boring supervised learning} problems.
-\item The use of powerful architectures and \structure{training on a whole class} of dynamical systems
+\item Training on \structure{on a whole class} of dynamical systems
 makes the outcome special.
-\item If the optimization works out well, the Transformer becomes   a \structure{meta model} of the systems in $p(\D)$!
+\item If the optimization works out well, the Transformer becomes a \structure{meta model} of the systems in $p(\D)$.
 \item We have \structure{learned a learning algorithm!}
-%The trained Transformer becomes \structure{as powerful as a learning algorithm}!
 \end{itemize}
 \end{frame}
 
 
-
-%\begin{frame}{Transformer architectures}
-%\begin{columns}[t]
-%\column{.33\textwidth}
-%\begin{center}
-%One-step prediction:
-%decoder-only ($\sim$ GPT-2)
-%\begin{figure}
-%\includegraphics[height=110 pt]{fig/architecture/decoder_architecture.pdf}
-%\end{figure}
-%\vskip 1em
-%
-%\end{center}
-%\column{.69\textwidth}
-%\begin{center}
-%Multi-step simulation:\\
-%encoder-decoder ($\sim$ language translation)
-%\begin{figure}
-%\includegraphics[height=130 pt]{fig/architecture/encoder_decoder_architecture.pdf}
-%\end{figure}
-%\vskip -.8em
-%
-%\end{center}
-%\end{columns}
-%\pause
-%\vskip 1em
-%\begin{itemize}
-%	\item[\book]
-%		\begin{tiny}
-%	\structure{A. Vaswani et al.} % A. Antoniou, P. Micaelli, and A. Strokey
-%     Attention is all you need.
-%     \emph{30th Conference on  Neural Information Processing Systems (NeurIPS 2017).}
-%		\end{tiny}\\
-%\end{itemize}
-%NLP architectures modified to process \structure{real-valued input/output sequences}.
-%
-%\end{frame}
-
-\begin{frame}{Transformer architectures}
-\begin{columns}[t]
-\column{.33\textwidth}
-\begin{block}{One-step prediction:}
-\begin{figure}
-\vskip 1em
-\includegraphics[height=110 pt]{fig/architecture/decoder_architecture.pdf}
-\vskip .8em
-decoder-only ($\sim$ GPT-2)
-\end{figure}
-\end{block}
-\column{.65\textwidth}
-\begin{block}{Multi-step simulation}
-\begin{figure}
-\includegraphics[height=130 pt]{fig/architecture/encoder_decoder_architecture.pdf}
-encoder-decoder ($\sim$ language translation)
-\end{figure}
-\end{block}
-\end{columns}
-\vskip 1em
-%\begin{itemize}
-%	\item[\book]
-%		\begin{tiny}
-%	\structure{A. Vaswani et al.} % A. Antoniou, P. Micaelli, and A. Strokey
-%     Attention is all you need.
-%     \emph{30th Conference on  Neural Information Processing Systems (NeurIPS 2017).}
-%		\end{tiny}\\
-%\end{itemize}
-NLP architectures modified to process \structure{real-valued input/output sequences}.
-\end{frame}
-
-
-\begin{frame}{Experiments - System classes}
+\begin{frame}{Previous experiments - System classes}
 One-step prediction and multi-step simulation on two system classes:
 %\vskip 1em
 \begin{columns}[t]
@@ -394,35 +287,13 @@ y_{k+1} &= Cx_k
  	\begin{itemize}
 	\item[\github]
 		\begin{tiny}
-		\url{https://github.com/forgi86/sysid-transformers}
+          M. Forgione, F. Pura, D. Piga. In-context learning for model-free system identification. IEEE Control Systems Letters, \vskip -1em 2023
+		%\url{https://github.com/forgi86/sysid-transformers}
 		\end{tiny}\\
  \end{itemize}
 \end{frame}
 
-\begin{frame}{Experiments - one-step prediction results}
-\begin{columns}[t]
-\column{.5\textwidth}
-\begin{center}
-\begin{figure}
-LTI: one sequence
-\includegraphics[width=\textwidth]{fig/lin_one_step_single.pdf}
-WH: one sequence
-\includegraphics[width=\textwidth]{fig/wh_one_step_single.pdf}
-\end{figure}
-\end{center}
-\column{.5\textwidth}
-\begin{center}
-\begin{figure}
-LTI: 256 sequences
-\includegraphics[width=\textwidth]{fig/lin_one_step_batch.pdf}
-WH: 32 sequences
-\includegraphics[width=\textwidth]{fig/wh_one_step_batch.pdf}
-\end{figure}
-\end{center}
-\end{columns}
-\end{frame}
-
-\begin{frame}{Experiments - multi-step simulation results}
+\begin{frame}{Previous experiments - multi-step simulation results}
 \begin{columns}[t]
 \column{.5\textwidth}
 \begin{center}
@@ -445,20 +316,99 @@ WH: 32 sequences
 \end{columns}
 \end{frame}
 
+\begin{frame}{New experiments - Generalization and adaptation}
+     In the current contribution, we investigate:
+     \begin{enumerate}
+          \item \structure{Generalization} of a trained meta model on a \structure{new system class}
+          \item \structure{Adaptation} of a meta model to:
+          \begin{enumerate}
+               \item A {specific instance} within the system class (specialization)
+               \item A {system instance} outside of the system class
+               %\item New system classes. From WH to Parallel WH with multiple branches
+               \item New tasks. From 100- to 1000-step-ahead simulation
+          \end{enumerate}
+
+     \end{enumerate}
+\end{frame}
+
+\begin{frame}{Generalization}
+Three LTI system classes. Order $< 10$, eigs with mag/phase in ranges:
+\begin{columns}
+\column{.5\textwidth}
+\begin{itemize}
+     \item[a] $(0.8, 0.97) / (-\nicefrac{\pi}{2}, \nicefrac{\pi}{2})$
+     \item[b] $(0.5, 0.75) / (\nicefrac{\pi}{2}, \nicefrac{3}{4}\pi)$
+     \item[c] $(0.5, 0.97) / (-\pi, \pi)$  
+\end{itemize}
+\includegraphics[height=100pt]{fig/shift/pole_distribution.pdf}
+\column{.5\textwidth}
+\includegraphics[height=75pt]{fig/shift/loss_shift_A.pdf}\\
+%\includegraphics[height=50pt]{fig/shift/loss_shift_B.pdf}\\
+\includegraphics[height=75pt]{fig/shift/loss_shift_AB.pdf}
+\end{columns}
+\pause
+\begin{itemize}
+     \item Training only on a or b leads to a large generalization error on c.
+     \item Training on a+b leads to a small generalization error on c
+     \item Good generalization to unseen regions (gray area)
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Adaptation to specific system instances}
+With just 140 sequences and $\approx$ 5 minutes of fine-tuning we can adapt, the WH meta model:
+\begin{itemize}
+     \item To a specific instance of the WH class (left)
+     \item To a PWH system instance, which is out of the WH class (right)
+\end{itemize}
+
+\begin{columns}
+\column{.5\textwidth}
+\begin{figure}
+     \includegraphics[height=100pt]{fig/adaptation/wh_error_25_75_percentile.pdf}
+\end{figure}
+\column{.5\textwidth}
+\begin{figure}
+     \includegraphics[height=100pt]{fig/adaptation/pwh_error_25_75_percentile.pdf}
+\end{figure}
+\end{columns}
+\pause
+\vskip 1em
+NOTE: training the WH meta model from scratch requires instead $\approx$ 1 day, 1M iterations, and 32M training instances!
+\end{frame}
+
+\begin{frame}{Adaptation to new tasks}
+     We try to learn a 1000-step-ahead meta model for the WH class.
+     \begin{figure}
+     \includegraphics[height=100pt]{fig/short_long/wh_pretrain_iterations.pdf}
+     \end{figure}
+     \begin{itemize}
+          \item Learning the 1000-step model from scratch (orange) seems hard. Loss is stuck at a high value
+          \item Learning a 100-step model (blue) is possible. We also did it in our previous work...
+          \item Starting from the 100-step model, the optimization of the 1000-step model converges very quickly (green line)!
+     \end{itemize}
+\end{frame}
 
 \begin{frame}{Conclusions}
- An \structure{in-context} learning approach for system identification.
+\begin{itemize}
+\item While training of a meta-model from scratch is computationally intensive, adaptation to new tasks and systems is fast and efficient.
+\item This paves the way to the development of \structure{foundation models} for system identification.
+\end{itemize}
+%  Further investigations on \structure{in-context} learning approach for system identification.
+%  \begin{itemize}
+%   \item Model-free, no need to re-train for a specific dataset/system
+%   \item Exploits the power of Transformers seen as \structure{trainable algorithms}
+%   \item Seems to work!
+%  \end{itemize}
+%  \pause
+%  \vskip 1em
+\pause
+\vskip 1em
+Many possible research directions and applications including:
  \begin{itemize}
-  \item Model-free, no need to re-train for a specific dataset/system
-  \item Exploits the power of Transformers seen as \structure{trainable algorithms}
-  \item Seems to work!
- \end{itemize}
- \pause
- \vskip 1em
-Many possible research directions including:
- \begin{itemize}
-  \item Transfer learning from one system class to another...
-  \item ... and from simulation to reality.
+  \item State estimation (see)
+  \item Control
+  \item Time series augmentation
  \end{itemize}
 \end{frame}
 
