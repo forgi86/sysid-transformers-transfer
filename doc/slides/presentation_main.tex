@@ -78,7 +78,8 @@
 %$$\D = u_{1:N}, y_{1:N}$$
 from  system $\sys$.
 \item Apply an algorithm to estimate a model $M(\hat \theta)$ of $\sys$:
-$$\hat \theta = \learn(\D)  \qquad \text{e.g.  }  \learn(\D)  = \arg \min_{\theta \in \Theta} \mathcal{L}(\D, M(\theta))$$
+$$\hat \theta = \learn(\D)  \qquad \text{e.g.  }  \learn(\D)  = \mathrm{PEM}$$
+%\arg \min_{\theta \in \Theta} \mathcal{L}(\D, M(\theta))$$
 \item Make predictions/simulations using the model on new data:
 %$$\hat y_k = M(u_{1:k-1}; \theta^*)$$
 $$\hat y^*_{1:M} = M(u^*_{1:M}; \hat \theta)$$
@@ -132,40 +133,41 @@ Can we get better at identifying $\sys^{(i)}$ as we observe more datasets $\D^{(
 \item The learned algorithm could then be applied to \structure{real data}
 % with insight
 \end{itemize}
-\vskip 1em
-\pause
-Meta learning from a \structure{finite collection} would also be interesting...
+%\vskip 1em
+%\pause
+%Meta learning from a \structure{finite collection} would also be interesting...
 \end{frame}
 
 \begin{frame}{In-context learning}
 Many meta learning strategies around. Here focus on \structure{in-context learning}.
 \vskip 1em
-\begin{itemize}
-\item \structure{Transformers} are expressive  as \structure{a programming language}%are sufficiently expressive to \structure{represent algorithms}.
-\item We make Transformers \structure{behave like algorithms}. We provide:
+%\begin{itemize}
+%\item \structure{Transformers} are expressive  as \structure{a programming language}%are sufficiently expressive to \structure{represent algorithms}.
+We provide a very powerful ML model (Transformer) with:
 \begin{itemize}
 \item A \structure{context}, namely an input/output sequence of a system
 \item A \structure{task}, like predicting the next output or simulating for more steps
 \end{itemize}
-\item The Transformer must \structure{learn to identify} the system to solve the task!
-\end{itemize}
+The Transformer must \structure{learn to identify} the system to solve the task!
+%\end{itemize}
 \vskip 1em
 
 \pause
 
 Context + task may be seen as a \structure{prompt} to a Large Language Model, which can then
 \structure{continue the word sequence} in an optimal way.
-
-
-\vskip 2em
+\begin{align*}
+	 \text{question} \rightarrow \text{answer}\\
+     u_{1:m}, y_{1:m}, u_{m+1:N} \rightarrow \hat y_{m+1:N}
+\end{align*}
 
 \begin{itemize}
-	\item[\book]
-		\begin{tiny}
-	\structure{G.~Weiss et al.} % A. Antoniou, P. Micaelli, and A. Strokey
-     Thinking like Transformers.
-     \emph{38th International Conference on Machine Learning (ICML 2022).}
-		\end{tiny}
+%	\item[\book]
+%		\begin{tiny}
+%	\structure{G.~Weiss et al.} 
+%     Thinking like Transformers.
+%     \emph{38th International Conference on Machine Learning (ICML 2022).}
+%		\end{tiny}
 		
 	\item[\book]
 		\begin{tiny}
@@ -185,12 +187,12 @@ Context + task may be seen as a \structure{prompt} to a Large Language Model, wh
 \end{frame}
 
 
-\begin{frame}{Multi-step simulation}
+\begin{frame}{In-context learning with Transformers}
 %     \begin{columns}[t]
 %     \column{.48\textwidth}
 %     \begin{block}{Multi-step simulation}
 %     \vskip -1em
-     Meta-model trained to predict $\hat y_{m+1:N} = \free_\phi(u_{1:m}, y_{1:m}, u_{m+1:N})$
+%     Meta-model trained to predict $\hat y_{m+1:N} = \free_\phi(u_{1:m}, y_{1:m}, u_{m+1:N})$
      %\vskip .8em
      %Meta-model receives:
      \begin{itemize}
@@ -219,7 +221,7 @@ Context + task may be seen as a \structure{prompt} to a Large Language Model, wh
      \end{frame}
      
 \begin{frame}{Meta model training}
-Meta model trained in a standard \structure{supervised learning} setting: 
+Meta model $\free_\phi$ trained in a standard \structure{supervised learning} setting: 
 \begin{small}
      $$\hat \phi = \arg \min_\phi \mathcal{L}_{\rm sim}(\phi)$$
 \begin{align*}
@@ -238,7 +240,7 @@ Meta model trained in a standard \structure{supervised learning} setting:
 
 \pause
 \begin{itemize}
-\item Training on \structure{on a whole class} of dynamical systems
+\item Training \structure{on a whole class} of dynamical systems
 makes the outcome special.
 \item If the optimization works out well, the Transformer becomes a \structure{meta model} of the systems in $p(\D)$.
 \item We have \structure{learned a learning algorithm!}
@@ -309,7 +311,7 @@ WH: one sequence
 \begin{figure}
 LTI: 256 sequences
 \includegraphics[width=\textwidth]{fig/lin_sim_batch.pdf}
-WH: 32 sequences
+WH: 256 sequences
 \includegraphics[width=\textwidth]{fig/wh_sim_batch.pdf}
 \end{figure}
 \end{center}
@@ -317,7 +319,13 @@ WH: 32 sequences
 \end{frame}
 
 \begin{frame}{New experiments - Generalization and adaptation}
-     In the current contribution, we investigate:
+Training meta models from scratch is relatively expensive and data hungry.
+\begin{itemize}
+ \item For the WH class, $\approx$ 1 day on a 3090 GPU over 32M training instances.
+\end{itemize}
+\pause
+\vskip 1em
+     In this SYSID '24 work, we investigate:
      \begin{enumerate}
           \item \structure{Generalization} of a trained meta model on a \structure{new system class}
           \item \structure{Adaptation} of a meta model to:
@@ -374,7 +382,8 @@ With just 140 sequences and $\approx$ 5 minutes of fine-tuning we can adapt, the
 \end{columns}
 \pause
 \vskip 1em
-NOTE: training the WH meta model from scratch requires instead $\approx$ 1 day, 1M iterations, and 32M training instances!
+REMARK: training the WH meta model from scratch required instead $\approx$  32M training instances and took
+1 day!
 \end{frame}
 
 \begin{frame}{Adaptation to new tasks}
@@ -392,7 +401,7 @@ NOTE: training the WH meta model from scratch requires instead $\approx$ 1 day, 
 \begin{frame}{Conclusions}
 \begin{itemize}
 \item While training of a meta-model from scratch is computationally intensive, adaptation to new tasks and systems is fast and efficient.
-\item This paves the way to the development of \structure{foundation models} for system identification.
+\item This makes the case for the development of \structure{foundation models} for system identification.
 \end{itemize}
 %  Further investigations on \structure{in-context} learning approach for system identification.
 %  \begin{itemize}
@@ -406,9 +415,9 @@ NOTE: training the WH meta model from scratch requires instead $\approx$ 1 day, 
 \vskip 1em
 Many possible research directions and applications including:
  \begin{itemize}
-  \item State estimation (see)
+  \item State estimation
   \item Control
-  \item Time series augmentation
+  \item Dataset augmentation
  \end{itemize}
 \end{frame}
 
